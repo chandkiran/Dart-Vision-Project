@@ -1,6 +1,7 @@
 import {ApiError} from "../utils/ApiError.js"
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/users.models.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
 const registerUser=asyncHandler(async(req,res)=>{
     // Get user details from from end 
     const{email,username,password}=req.body
@@ -12,19 +13,29 @@ const registerUser=asyncHandler(async(req,res)=>{
        throw new ApiError(400,"All fields required") 
     }
     // Check if user already exits check by email/username
-    const existedUser=User.findOne({
+    const existedUser=await User.findOne({
         $or:[{username},{email}] //Checking by username or email
     })
     if(existedUser){
         throw new ApiError(409,"User with email or username already exist")
     }
     // create use object
-    User.create({
+    const user =await User.create({
       username:username.toLowerCase(),
       email ,
       password 
     })
-    // remove password and refresh token
+     // remove password and refresh token
+    const createdUser=await User.findById(user._id).select(
+        "-password -refreshToken"
+    )
+    if (!createdUser){
+        throw new ApiError(500,"Something went wrong while registering user")
+    }
+   return res.status(201).json(
+    new ApiResponse(201, createdUser, "User registerd successfully")
+   )
+
     // check for user creation
 })
 
