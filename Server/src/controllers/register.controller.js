@@ -2,20 +2,24 @@ import {ApiError} from "../utils/ApiError.js"
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/users.models.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import mongoose from "mongoose";
 // Generate access and refresh token
 // Access token for authorization of user to access protected resources .Refresh token to obtain new access token
-const generateAcessAndRefreshTokens=async(userId)=>{
+const generateAcessAndRefreshTokens=async(_id)=>{
     // userId is returned by the user object created below
     try{
-    const user=await User.findById(userId)
+        console.log("Generating token",_id)
+    const user=await User.findById(_id)
+    console.log("found")
     const accessToken=user.generateAccessToken();
     const refreshToken=user.generateRefreshToken();
-    user.refreshToken=refreshToken
+    user.refreshToken=refreshToken;
     await user.save({validateBeforeSave:false })
     return {accessToken,refreshToken}
 
     }
     catch(error){
+        console.log(error)
         throw new ApiError(500,"Something went wrong while generating access and refresh token")
 
     }
@@ -59,7 +63,7 @@ const registerUser=asyncHandler(async(req,res)=>{
 const loginUser=asyncHandler(async(req,res)=>{
      const{email,username,password}=req.body;
      if (!username||!email){
-        throw newApiError(400,"username and email required")
+        throw new ApiError(400,"username and email required")
      }
     //Find user by username or email  
      const user=await User.findOne({
@@ -76,7 +80,7 @@ const loginUser=asyncHandler(async(req,res)=>{
      }
     //  USing access token and refresh token
     const {accessToken,refreshToken}=await generateAcessAndRefreshTokens(user._id)
-   const loggedInUser= User.findById(user._id).select("-password -refreshToken")
+   const loggedInUser= await User.findById(user._id).select("-password -refreshToken")
     const options={
         httpOnly:true,
         secure:true
