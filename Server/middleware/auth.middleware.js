@@ -9,7 +9,7 @@ export const verifyJwt=asyncHandler(async(req,res,next)=>{
         if(!token){
             throw new ApiError(401,"Unauthorized access")
         }
-        const decodedToken=jwt.verify(token,process.env.ACCESS_TOKEN_SECTRET)
+        const decodedToken=jwt.verify(token,process.env.ACCESS_TOKEN_SECRET)
         const user=await User.findById(decodedToken?._id).select(
         -"password -refreshToken"
         )
@@ -20,7 +20,10 @@ export const verifyJwt=asyncHandler(async(req,res,next)=>{
         req.user=user;
         next()
     } catch (error) {
-        throw new ApiError(401,err?.message||"Invalid access Token")
+        throw new ApiError(401,error?.message||"Invalid access Token")
     }
+  
+
+   
 
 })
